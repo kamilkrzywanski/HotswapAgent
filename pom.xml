@@ -4,16 +4,29 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.hotswapagent</groupId>
-    <artifactId>hotswap-agent-aggregator</artifactId>
+    <artifactId>hotswap-agent-parent</artifactId>
     <version>2.0.2</version>
     <packaging>pom</packaging>
 
-    <name>Hotswap Agent Aggregator</name>
-    <description>Aggregator for Hotswap Agent projects</description>
-    <url>https://github.com/HotswapProjects/HotswapAgent</url>
+    <name>HotswapAgent</name>
+    <description>Java unlimited runtime class and resource redefinition.</description>
+    <url>http://hotswapagent.org/</url>
+
+    <properties>
+        <revision>2.0.2</revision>
+        <dcevm>dcevm</dcevm>
+        <dcevm.test.arguments>-XX:+AllowEnhancedClassRedefinition -XX:HotswapAgent=external
+            --add-opens=java.base/sun.nio.ch=ALL-UNNAMED
+            --add-opens java.base/sun.security.util=ALL-UNNAMED
+            --add-opens java.base/sun.security.action=ALL-UNNAMED
+            --add-opens java.base/java.lang.reflect=ALL-UNNAMED
+        </dcevm.test.arguments>
+        <project.build.outputEncoding>UTF-8</project.build.outputEncoding>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    </properties>
 
     <modules>
-        <module>hotswap-agent-parent</module>
         <module>hotswap-agent-core</module>
         <module>plugin/hotswap-agent-hibernate-plugin</module>
         <module>plugin/hotswap-agent-hibernate-jakarta-plugin</module>
@@ -76,8 +89,8 @@
     </issueManagement>
 
     <scm>
-        <connection>scm:git:http://github.com/HotswapProjects/HotswapAgent.git</connection>
-        <developerConnection>scm:git:git@github.com/HotswapProjects/HotswapAgent.git</developerConnection>
+        <connection>scm:git:git://github.com/HotswapProjects/HotswapAgent.git</connection>
+        <developerConnection>scm:git:git@github.com:HotswapProjects/HotswapAgent.git</developerConnection>
         <url>https://github.com/HotswapProjects/HotswapAgent</url>
     </scm>
 
@@ -88,11 +101,92 @@
             <roles>
                 <role>Admin</role>
             </roles>
+            <url>http://jiribubnik.cz</url>
             <organizationUrl>http://jiribubnik.cz</organizationUrl>
+        </developer>
+        <developer>
+            <email>lada.dvorak7@gmail.com</email>
+            <name>Vladimir Dvorak</name>
+            <url>https://github.com/skybber</url>
+            <id>skybber</id>
         </developer>
     </developers>
 
     <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.14.1</version>
+                    <configuration>
+                        <source>8</source>
+                        <target>8</target>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-dependency-plugin</artifactId>
+                    <version>3.9.0</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-source-plugin</artifactId>
+                    <version>3.3.1</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>3.5.4</version>
+                    <configuration>
+                        <argLine>-XX:+AllowEnhancedClassRedefinition</argLine>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <artifactId>maven-failsafe-plugin</artifactId>
+                    <version>3.5.4</version>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>integration-test</goal>
+                                <goal>verify</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+                <!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
+                <!--<plugin>-->
+                <!--<groupId>org.eclipse.m2e</groupId>-->
+                <!--<artifactId>lifecycle-mapping</artifactId>-->
+                <!--<version>1.0.0</version>-->
+                <!--<configuration>-->
+                <!--<lifecycleMappingMetadata>-->
+                <!--<pluginExecutions>-->
+                <!--<pluginExecution>-->
+                <!--<pluginExecutionFilter>-->
+                <!--<groupId>-->
+                <!--org.apache.maven.plugins-->
+                <!--</groupId>-->
+                <!--<artifactId>-->
+                <!--maven-dependency-plugin-->
+                <!--</artifactId>-->
+                <!--<versionRange>-->
+                <!--[2.8,)-->
+                <!--</versionRange>-->
+                <!--<goals>-->
+                <!--<goal>properties</goal>-->
+                <!--</goals>-->
+                <!--</pluginExecutionFilter>-->
+                <!--<action>-->
+                <!--<execute />-->
+                <!--</action>-->
+                <!--</pluginExecution>-->
+                <!--</pluginExecutions>-->
+                <!--</lifecycleMappingMetadata>-->
+                <!--</configuration>-->
+                <!--</plugin>-->
+            </plugins>
+        </pluginManagement>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -116,7 +210,203 @@
                 <artifactId>versions-maven-plugin</artifactId>
                 <version>2.1</version>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar-no-fork</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>test-compile</phase>
+                        <goals>
+                            <goal>properties</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <useSystemClassLoader>true</useSystemClassLoader>
+                    <useManifestOnlyJar>false</useManifestOnlyJar>
+                    <!--
+                    <useSystemClassLoader>true</useSystemClassLoader>
+                    <useManifestOnlyJar>false</useManifestOnlyJar>
+                    <argLine>-javaagent:${org.hotswapagent:hotswap-agent-core:jar} -Xbootclasspath/a:"${org.hotswapagent:hotswap-agent-core:jar}:${project.build.OutputDirectory}"</argLine>
+                     -->
+                    <argLine>${dcevm.test.arguments} -javaagent:${project.basedir}/../../hotswap-agent-core/target/hotswap-agent-core-2.0.2.jar</argLine>
+                    <jvm>${java.home}/bin/java</jvm>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>flatten-maven-plugin</artifactId>
+                <version>1.7.3</version>
+                <configuration>
+                    <flattenMode>minimum</flattenMode>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>flatten</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>flatten</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>flatten-clean</id>
+                        <phase>clean</phase>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
+    <profiles>
+        <profile>
+            <id>release</id>
+
+            <distributionManagement>
+                <repository>
+                    <id>ossrh</id>
+                    <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+                </repository>
+                <snapshotRepository>
+                    <id>ossrh</id>
+                    <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+                </snapshotRepository>
+            </distributionManagement>
+
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <version>2.2.1</version>
+                        <executions>
+                            <execution>
+                                <id>attach-sources</id>
+                                <goals>
+                                    <goal>jar-no-fork</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>2.10.4</version>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                                <configuration>
+                                    <failOnError>false</failOnError>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>1.6</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                                <configuration>
+                                    <keyname>jiri.bubnik@gmail.com</keyname>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.sonatype.plugins</groupId>
+                        <artifactId>nexus-staging-maven-plugin</artifactId>
+                        <version>1.6.7</version>
+                        <extensions>true</extensions>
+
+                        <configuration>
+                            <serverId>ossrh</serverId>
+
+                            <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+                            <autoReleaseAfterClose>false</autoReleaseAfterClose>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>default-tools</id>
+            <activation>
+                <jdk>(,1.11)</jdk>
+            </activation>
+
+            <dependencyManagement>
+                <dependencies>
+                    <!-- Tools jar is needed at runtime to allow JPDA hotswap -->
+                    <dependency>
+                        <groupId>com.sun</groupId>
+                        <artifactId>tools</artifactId>
+                        <version>${java.version}</version>
+                        <scope>system</scope>
+                        <systemPath>${java.home}/../lib/tools.jar</systemPath>
+                        <optional>true</optional>
+                    </dependency>
+                </dependencies>
+            </dependencyManagement>
+        </profile>
+    </profiles>
+    <dependencyManagement>
+        <dependencies>
+            <!-- Test dependencies -->
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>4.13.2</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.jmock</groupId>
+                <artifactId>jmock-junit4</artifactId>
+                <version>2.13.1</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.jmock</groupId>
+                <artifactId>jmock-legacy</artifactId>
+                <version>2.13.1</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.ow2.asm</groupId>
+                <artifactId>asm</artifactId>
+                <version>9.9</version>
+                <scope>test</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+
 
 </project>

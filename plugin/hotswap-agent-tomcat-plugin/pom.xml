@@ -5,12 +5,12 @@
     <parent>
         <groupId>org.hotswapagent</groupId>
         <artifactId>hotswap-agent-parent</artifactId>
-        <version>${revision}</version>
-        <relativePath>../../hotswap-agent-parent/pom.xml</relativePath>
+        <version>2.0.2</version>
+
     </parent>
 
     <artifactId>hotswap-agent-tomcat-plugin</artifactId>
-    
+
     <properties>
         <tomcat.version>10.1.28</tomcat.version>
         <!--<tomcat.artifact>catalina</tomcat.artifact> &lt;!&ndash; catalina if 6.x &ndash;&gt;-->

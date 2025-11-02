@@ -6,14 +6,13 @@
     <parent>
         <groupId>org.hotswapagent</groupId>
         <artifactId>hotswap-agent-parent</artifactId>
-        <version>${revision}</version>
-        <relativePath>../../hotswap-agent-parent/pom.xml</relativePath>
+        <version>2.0.2</version>
     </parent>
 
     <artifactId>hotswap-agent-proxy-plugin</artifactId>
 
         <properties>
-                <org.springframework.version>5.3.30</org.springframework.version>
+                <org.springframework.version>5.3.39</org.springframework.version>
         </properties>
 
     <dependencies>
@@ -41,13 +40,13 @@
         <dependency>
             <groupId>org.ow2.asm</groupId>
             <artifactId>asm</artifactId>
-            <version>7.0</version>
+            <version>9.9</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.ow2.asm</groupId>
             <artifactId>asm-commons</artifactId>
-            <version>7.0</version>
+            <version>9.9</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -63,6 +62,29 @@
                     <artifactId>tools</artifactId>
                 </dependency>
             </dependencies>
+        </profile>
+        <profile>
+            <id>jdk9+</id>
+            <activation>
+                <jdk>[1.9,)</jdk>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-compiler-plugin</artifactId>
+                        <version>3.14.1</version>
+                        <configuration>
+                            <compilerArgs>
+                                <compilerArg>--add-exports</compilerArg>
+                                <compilerArg>java.base/sun.security.action=ALL-UNNAMED</compilerArg>
+                                <compilerArg>--add-exports</compilerArg>
+                                <compilerArg>java.base/sun.security.util=ALL-UNNAMED</compilerArg>
+                            </compilerArgs>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
     </profiles>
 </project>
