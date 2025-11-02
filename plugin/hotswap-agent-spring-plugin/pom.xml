@@ -13,10 +13,10 @@
     <artifactId>hotswap-agent-spring-plugin</artifactId>
 
     <properties>
-        <org.springframework.version>5.3.37</org.springframework.version>
+        <org.springframework.version>5.3.39</org.springframework.version>
         <com.h2database.version>2.2.220</com.h2database.version>
-        <org.mybatis.version>3.5.9</org.mybatis.version>
-        <org.mybatis-spring.version>2.0.7</org.mybatis-spring.version>
+        <org.mybatis.version>3.5.19</org.mybatis.version>
+        <org.mybatis-spring.version>2.1.2</org.mybatis-spring.version>
     </properties>
 
 
@@ -72,14 +72,14 @@
         <dependency>
             <groupId>org.aspectj</groupId>
             <artifactId>aspectjrt</artifactId>
-            <version>1.9.9.1</version>
+            <version>1.9.24</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.aspectj</groupId>
             <artifactId>aspectjweaver</artifactId>
-            <version>1.9.9.1</version>
+            <version>1.9.24</version>
             <scope>test</scope>
         </dependency>
 
@@ -87,7 +87,7 @@
         <dependency>
             <groupId>cglib</groupId>
             <artifactId>cglib</artifactId>
-            <version>2.2</version>
+            <version>3.3.0</version>
             <scope>test</scope>
         </dependency>
 

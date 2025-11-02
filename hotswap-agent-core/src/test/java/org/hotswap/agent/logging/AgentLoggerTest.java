@@ -19,44 +19,35 @@
 package org.hotswap.agent.logging;
 
 import org.hotswap.agent.testData.SimplePlugin;
-import org.jmock.Expectations;
-import org.jmock.Mockery;
-import org.jmock.lib.legacy.ClassImposteriser;
 import org.junit.Test;
+
+import static org.mockito.Mockito.*;
 
 /**
  * Created by bubnik on 12.10.13.
  */
 public class AgentLoggerTest {
-    Mockery context = new Mockery() {{
-        setImposteriser(ClassImposteriser.INSTANCE);
-    }};
-
-    AgentLoggerHandler handler = context.mock(AgentLoggerHandler.class);
-
 
     @Test
     public void testDefaultLevel() throws Exception {
-        final Class clazz = SimplePlugin.class;
+        AgentLoggerHandler handler = mock(AgentLoggerHandler.class);
+
+        final Class<?> clazz = SimplePlugin.class;
         final String message = "Test";
         final Throwable error = new Throwable();
+
         AgentLogger.setHandler(handler);
 
-        context.checking(new Expectations() {{
-            oneOf(handler).print(clazz, AgentLogger.Level.ERROR, message, null);
-            oneOf(handler).print(clazz, AgentLogger.Level.INFO, message, error);
-            never(handler).print(clazz, AgentLogger.Level.TRACE, message, error);
-        }});
-
-        // default level INFO
         AgentLogger logger = AgentLogger.getLogger(clazz);
+
         logger.error(message);
         logger.info(message, error);
         logger.trace(message, error);
 
-        // return default handler for other tests
-        AgentLogger.setHandler(new AgentLoggerHandler());
+        verify(handler, times(1)).print(clazz, AgentLogger.Level.ERROR, message, null);
+        verify(handler, times(1)).print(clazz, AgentLogger.Level.INFO, message, error);
+        verify(handler, never()).print(clazz, AgentLogger.Level.TRACE, message, error);
 
-        context.assertIsSatisfied();
+        AgentLogger.setHandler(new AgentLoggerHandler());
     }
 }
