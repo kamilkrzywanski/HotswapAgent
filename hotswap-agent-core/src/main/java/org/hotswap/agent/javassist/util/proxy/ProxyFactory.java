@@ -717,13 +717,7 @@ public class ProxyFactory {
      *
      * @since 3.4
      */
-    public static ClassLoaderProvider classLoaderProvider =
-        new ClassLoaderProvider() {
-            @Override
-            public ClassLoader get(ProxyFactory pf) {
-                  return pf.getClassLoader0();
-              }
-        };
+    public static ClassLoaderProvider classLoaderProvider = ProxyFactory::getClassLoader0;
 
     protected ClassLoader getClassLoader() {
         return classLoaderProvider.get(this);
@@ -929,13 +923,7 @@ public class ProxyFactory {
         classname = makeProxyName(basename);
     }
 
-    private static Comparator<Map.Entry<String,Method>> sorter =
-        new Comparator<Map.Entry<String,Method>>() {
-            @Override
-            public int compare(Map.Entry<String,Method> e1, Map.Entry<String,Method> e2) {
-                return e1.getKey().compareTo(e2.getKey());
-            }
-        };
+    private static Comparator<Map.Entry<String,Method>> sorter = Map.Entry.comparingByKey();
 
     private void makeSortedMethodList() {
         checkClassAndSuperName();
@@ -943,7 +931,7 @@ public class ProxyFactory {
         hasGetHandler = false;      // getMethods() may set this to true.
         Map<String,Method> allMethods = getMethods(superClass, interfaces);
         signatureMethods = new ArrayList<Map.Entry<String,Method>>(allMethods.entrySet());
-        Collections.sort(signatureMethods, sorter);
+        signatureMethods.sort(sorter);
     }
 
     private void computeSignature(MethodFilter filter) // throws CannotCompileException

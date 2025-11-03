@@ -628,12 +628,7 @@ public abstract class ReflectionUtils {
      */
     public static Method[] getAllDeclaredMethods(Class<?> leafClass) {
         final List<Method> methods = new ArrayList<Method>(32);
-        doWithMethods(leafClass, new MethodCallback() {
-            @Override
-            public void doWith(Method method) {
-                methods.add(method);
-            }
-        });
+        doWithMethods(leafClass, methods::add);
         return methods.toArray(new Method[methods.size()]);
     }
 
@@ -798,12 +793,7 @@ public abstract class ReflectionUtils {
      * @see Class#getDeclaredFields()
      */
     private static Field[] getDeclaredFields(Class<?> clazz) {
-        Field[] result = declaredFieldsCache.get(clazz);
-        if (result == null) {
-            result = clazz.getDeclaredFields();
-            declaredFieldsCache.put(clazz, result);
-        }
-        return result;
+        return declaredFieldsCache.computeIfAbsent(clazz, k -> clazz.getDeclaredFields());
     }
 
     /**

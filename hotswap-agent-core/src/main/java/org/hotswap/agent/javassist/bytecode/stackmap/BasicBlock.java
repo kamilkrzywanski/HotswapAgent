@@ -205,11 +205,7 @@ public class BasicBlock {
         private Mark makeMark0(Map<Integer,Mark> table, int pos,
                                boolean isBlockBegin, boolean isTarget) {
             Integer p = pos;
-            Mark m = table.get(p);
-            if (m == null) {
-                m = new Mark(pos);
-                table.put(p, m);
-            }
+            Mark m = table.computeIfAbsent(p, k -> new Mark(pos));
 
             if (isBlockBegin) {
                 if (m.block == null)

@@ -59,12 +59,7 @@ class SecurityActions extends SecurityManager
         if (System.getSecurityManager() == null)
             return clazz.getDeclaredMethods();
         else {
-            return AccessController.doPrivileged(
-                new PrivilegedAction<Method[]>() {
-                    public Method[] run() {
-                        return clazz.getDeclaredMethods();
-                    }
-                });
+            return AccessController.doPrivileged((PrivilegedAction<Method[]>) clazz::getDeclaredMethods);
         }
     }
 
@@ -73,12 +68,7 @@ class SecurityActions extends SecurityManager
         if (System.getSecurityManager() == null)
             return clazz.getDeclaredConstructors();
         else {
-            return AccessController.doPrivileged(
-                new PrivilegedAction<Constructor<?>[]>() {
-                    public Constructor<?>[] run() {
-                        return clazz.getDeclaredConstructors();
-                    }
-                });
+            return AccessController.doPrivileged((PrivilegedAction<Constructor<?>[]>) clazz::getDeclaredConstructors);
         }
     }
 

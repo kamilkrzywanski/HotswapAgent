@@ -21,34 +21,46 @@ package org.hotswap.agent.plugin.hibernate.proxy;
 import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.service.ServiceRegistry;
-import org.jmock.Expectations;
-import org.jmock.Mockery;
-import org.jmock.lib.legacy.ClassImposteriser;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.mockito.junit.MockitoJUnitRunner;
+
+import static org.mockito.Mockito.*;
 
 /**
  * @author Jiri Bubnik
  */
+@RunWith(MockitoJUnitRunner.class)
 public class SessionFactoryProxyTest {
 
-    Mockery context = new Mockery() {{
-        setImposteriser(ClassImposteriser.INSTANCE);
-    }};
+    @Mock
+    private SessionFactory sessionFactory;
 
-    final SessionFactory sessionFactory = context.mock(SessionFactory.class);
-    final ServiceRegistry serviceRegistry = context.mock(ServiceRegistry.class);
-    final Configuration configuration = context.mock(Configuration.class);
+    @Mock
+    private ServiceRegistry serviceRegistry;
 
-    //@Test
+    private Configuration configuration = new Configuration();
+
+    private SessionFactoryProxy wrapper;
+    private SessionFactory proxy;
+
+    @Before
+    public void setUp() {
+        MockitoAnnotations.initMocks(this);
+        wrapper = SessionFactoryProxy.getWrapper(configuration);
+        proxy = wrapper.proxy(sessionFactory, serviceRegistry);
+    }
+
+    @Ignore
+    @Test
     public void testProxy() throws Exception {
-
-        context.checking(new Expectations() {{
-            oneOf(sessionFactory).getCurrentSession();
-        }});
-
-        SessionFactoryProxy wrapper = SessionFactoryProxy.getWrapper(configuration);
-        SessionFactory proxy = wrapper.proxy(sessionFactory, serviceRegistry);
         proxy.getCurrentSession();
 
-        context.assertIsSatisfied();
+        verify(sessionFactory, times(1)).getCurrentSession();
+        verifyNoMoreInteractions(sessionFactory);
     }
 }
