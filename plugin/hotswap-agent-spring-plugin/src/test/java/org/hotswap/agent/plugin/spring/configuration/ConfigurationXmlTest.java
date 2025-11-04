@@ -23,6 +23,10 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.RandomAccessFile;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 
@@ -80,10 +84,30 @@ public class ConfigurationXmlTest {
             assertFalse(context.containsBean("c"));
         } finally {
             // recover Config.class
+            waitUntilFileIsFree(config.getFile(), 2000);
             Files.copy(new ByteArrayInputStream(origClassBytes), config.getFile().toPath(),
                     StandardCopyOption.REPLACE_EXISTING);
         }
     }
+
+    public static void waitUntilFileIsFree(File file, long timeoutMs) throws InterruptedException {
+        long start = System.currentTimeMillis();
+
+        while (System.currentTimeMillis() - start < timeoutMs) {
+            try (RandomAccessFile raf = new RandomAccessFile(file, "rw");
+                 FileChannel channel = raf.getChannel();
+                 FileLock lock = channel.tryLock()) {
+                if (lock != null) {
+                    return;
+                }
+            } catch (Exception e) {
+                //Ignored - file used by someone
+            }
+            Thread.sleep(300);
+        }
+        throw new RuntimeException("Timeout: file is still locked after " + timeoutMs + " ms");
+    }
+
 
     private void replaceConfig(Class<?> swap, int reloadTimes) throws Exception {
         long now = System.currentTimeMillis();
