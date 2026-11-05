@@ -34,6 +34,7 @@ import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
 import org.springframework.context.annotation.ClassPathBeanDefinitionScanner;
 import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.DescriptiveResource;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
@@ -161,9 +162,10 @@ public class XmlBeanDefinitionScannerAgent {
             }
         }
         for (URL url : urls) {
-            XmlBeanDefinitionScannerAgent xmlBeanDefinitionScannerAgent = getAgent(beanFactory, convertToClasspathURL(url.getPath()));
+            XmlBeanDefinitionScannerAgent xmlBeanDefinitionScannerAgent = getAgent(beanFactory, url);
             if (xmlBeanDefinitionScannerAgent == null) {
-                LOGGER.warning("url " + url + " is not associated with any XmlBeanDefinitionScannerAgent, not reloading");
+                // any changed XML file ends up here, e.g. MyBatis mappers, not only Spring bean definitions
+                LOGGER.debug("url {} is not associated with any XmlBeanDefinitionScannerAgent, not reloading", url);
                 continue;
             }
             try {
@@ -198,6 +200,45 @@ public class XmlBeanDefinitionScannerAgent {
         return pathToAgent.get(path);
     }
 
+    /**
+     * Find the agent of a changed XML file. Agents are registered by classpath path (e.g. "spring/context.xml"),
+     * the changed file is in a classpath directory which may be named anyhow (target/classes, build/resources/main,
+     * bin, src/main/resources with watchResources, ...).
+     */
+    static XmlBeanDefinitionScannerAgent getAgent(DefaultListableBeanFactory beanFactory, URL url) {
+        String filePath = url.getPath();
+        XmlBeanDefinitionScannerAgent agent = getAgentForFile(beanFactoryToAgentMap.get(beanFactory), filePath);
+        return agent != null ? agent : getAgentForFile(pathToAgent, filePath);
+    }
+
+    private static XmlBeanDefinitionScannerAgent getAgentForFile(Map<String, XmlBeanDefinitionScannerAgent> instances,
+                                                                 String filePath) {
+        if (instances == null) {
+            return null;
+        }
+        XmlBeanDefinitionScannerAgent result = null;
+        int resultPathLength = -1;
+        for (Map.Entry<String, XmlBeanDefinitionScannerAgent> entry : instances.entrySet()) {
+            XmlBeanDefinitionScannerAgent agent = entry.getValue();
+            if (agent.url != null && filePath.equals(agent.url.getPath())) {
+                return agent;
+            }
+            String path = entry.getKey();
+            if (path.length() > resultPathLength && isFileOfClasspathPath(filePath, path)) {
+                result = agent;
+                resultPathLength = path.length();
+            }
+        }
+        return result;
+    }
+
+    private static boolean isFileOfClasspathPath(String filePath, String path) {
+        if (filePath.equals(path)) {
+            return true;
+        }
+        return filePath.endsWith(path.startsWith("/") ? path : "/" + path);
+    }
+
     private static XmlBeanDefinitionScannerAgent findAgent(BeanDefinition beanDefinition) {
         if (!(beanDefinition instanceof AbstractBeanDefinition)) {
             LOGGER.debug("BeanDefinition [{}] is not an instance of AbstractBeanDefinition, ignore", beanDefinition);
@@ -227,7 +268,9 @@ public class XmlBeanDefinitionScannerAgent {
                         resource.getDescription());
                 return null;
             }
-            String path = convertToClasspathURL(resource.getURL().getPath());
+            // same key as in registerXmlBeanDefinitionScannerAgent (ResourceUtils.getPath)
+            String path = resource instanceof ClassPathResource ? ((ClassPathResource) resource).getPath()
+                    : convertToClasspathURL(resource.getURL().getPath());
             if (path == null) {
                 return null;
             }

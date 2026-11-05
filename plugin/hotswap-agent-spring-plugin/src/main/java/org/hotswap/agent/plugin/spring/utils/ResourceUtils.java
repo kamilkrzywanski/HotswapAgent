@@ -83,7 +83,8 @@ public class ResourceUtils {
             return paths[1];
         }
 
-        LOGGER.error("failed to convert filePath {} to classPath path", filePath);
+        // not an error: classes and resources can be in any directory (build/resources/main, bin, ...)
+        LOGGER.debug("failed to convert filePath {} to classPath path", filePath);
         return filePath;
     }
 
