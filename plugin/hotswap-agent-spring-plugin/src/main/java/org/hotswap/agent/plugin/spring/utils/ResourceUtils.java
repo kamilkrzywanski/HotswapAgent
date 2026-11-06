@@ -83,7 +83,8 @@ public class ResourceUtils {
             return paths[1];
         }
 
-        LOGGER.error("failed to convert filePath {} to classPath path", filePath);
+        // e.g. a class in a jar or an XML file that is not a Spring bean definition file, the path is used as it is
+        LOGGER.debug("failed to convert filePath {} to classPath path", filePath);
         return filePath;
     }
 
@@ -109,7 +110,7 @@ public class ResourceUtils {
             }
         }
 
-        LOGGER.error("failed to convert filePath {} to classPath path", filePath);
+        LOGGER.debug("failed to convert filePath {} to classPath path", filePath);
         return filePath;
     }
 }
