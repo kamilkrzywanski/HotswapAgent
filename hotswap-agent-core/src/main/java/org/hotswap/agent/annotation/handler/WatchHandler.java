@@ -27,6 +27,8 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Enumeration;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.hotswap.agent.config.PluginManager;
 import org.hotswap.agent.logging.AgentLogger;
@@ -90,25 +92,42 @@ public class WatchHandler<T extends Annotation> implements PluginHandler<T> {
             path = path.substring(0, path.length() - 2);
 
 
-        // classpath resources (already should contain extraClasspath)
+        Set<Path> registeredPaths = new HashSet<>();
+
+        // classpath resources
         Enumeration<URL> en = classLoader.getResources(path);
         while (en.hasMoreElements()) {
             try {
                 URI uri = en.nextElement().toURI();
 
                 // check that this is a local accessible file (not vfs inside JAR etc.)
+                File file;
                 try {
-                    new File(uri);
+                    file = new File(uri);
                 } catch (Exception e) {
                     LOGGER.trace("Skipping uri {}, not a local file.", uri);
                     continue;
                 }
 
-
+                registeredPaths.add(file.toPath().toAbsolutePath().normalize());
                 LOGGER.debug("Registering resource listener on classpath URI {}", uri);
                 registerResourceListener(pluginAnnotation, watchEventDTO, classLoader, uri);
             } catch (URISyntaxException e) {
                 LOGGER.error("Unable convert root resource path URL to URI", e);
+            }
+        }
+
+        // extraClasspath directories. The class loader may not contain them yet, e.g. the Tomcat plugin adds them
+        // to the webapp class loader after the plugins of the class loader were initialized.
+        for (URL url : pluginManager.getPluginConfiguration(classLoader).getExtraClasspath()) {
+            try {
+                Path pathInExtraClasspath = Paths.get(url.toURI()).resolve(path).toAbsolutePath().normalize();
+                if (pathInExtraClasspath.toFile().isDirectory() && registeredPaths.add(pathInExtraClasspath)) {
+                    LOGGER.debug("Registering resource listener on extraClasspath URI {}", pathInExtraClasspath.toUri());
+                    registerResourceListener(pluginAnnotation, watchEventDTO, classLoader, pathInExtraClasspath.toUri());
+                }
+            } catch (Exception e) {
+                LOGGER.error("Unable convert extraClasspath URL {} to path", e, url);
             }
         }
 
