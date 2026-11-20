@@ -38,8 +38,12 @@ import org.springframework.core.io.DescriptiveResource;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -58,7 +62,7 @@ public class XmlBeanDefinitionScannerAgent {
     public static final String PROPERTY_SOURCES_PLACEHOLDER_CONFIGURER = "org.springframework.context.support.PropertySourcesPlaceholderConfigurer";
 
     private static Map<DefaultListableBeanFactory, Map<String, XmlBeanDefinitionScannerAgent>> beanFactoryToAgentMap = new ConcurrentHashMap<>();
-    private static Map<String, XmlBeanDefinitionScannerAgent> pathToAgent = new HashMap<>();
+    private static Map<String, XmlBeanDefinitionScannerAgent> pathToAgent = new ConcurrentHashMap<>();
     private static boolean basePackageInited = false;
 
     // xmlReader for corresponding url
@@ -101,7 +105,7 @@ public class XmlBeanDefinitionScannerAgent {
         BeanDefinitionRegistry beanDefinitionRegistry = reader.getRegistry();
         if (beanDefinitionRegistry instanceof DefaultListableBeanFactory) {
             DefaultListableBeanFactory defaultListableBeanFactory = (DefaultListableBeanFactory) beanDefinitionRegistry;
-            Map<String, XmlBeanDefinitionScannerAgent> agentMap = beanFactoryToAgentMap.computeIfAbsent(defaultListableBeanFactory, k -> new HashMap<>());
+            Map<String, XmlBeanDefinitionScannerAgent> agentMap = beanFactoryToAgentMap.computeIfAbsent(defaultListableBeanFactory, k -> new ConcurrentHashMap<>());
             fillAgentInstance(reader, resource, agentMap);
             return;
         }
@@ -137,7 +141,9 @@ public class XmlBeanDefinitionScannerAgent {
             // ignore
         }
 
-        if (!instances.containsKey(path)) {
+        // A reload reads the XML as a file. In an unknown output folder the path of that file is not the path the
+        // XML was first loaded with, but the file must keep its agent and the beans registered with it.
+        if (!instances.containsKey(path) && findAgentByFile(instances.values(), resourceUrl) == null) {
             instances.put(path, new XmlBeanDefinitionScannerAgent(reader, resourceUrl));
         }
     }
@@ -161,7 +167,7 @@ public class XmlBeanDefinitionScannerAgent {
             }
         }
         for (URL url : urls) {
-            XmlBeanDefinitionScannerAgent xmlBeanDefinitionScannerAgent = getAgent(beanFactory, convertToClasspathURL(url.getPath()));
+            XmlBeanDefinitionScannerAgent xmlBeanDefinitionScannerAgent = getAgent(beanFactory, url);
             if (xmlBeanDefinitionScannerAgent == null) {
                 LOGGER.warning("url " + url + " is not associated with any XmlBeanDefinitionScannerAgent, not reloading");
                 continue;
@@ -192,7 +198,57 @@ public class XmlBeanDefinitionScannerAgent {
      * e.g. MyBatis mappers or logback.xml, are not.
      */
     public static boolean isBeanDefinitionXml(DefaultListableBeanFactory beanFactory, URL url) {
-        return getAgent(beanFactory, convertToClasspathURL(url.getPath())) != null;
+        return getAgent(beanFactory, url) != null;
+    }
+
+    /**
+     * Find the agent of a changed XML file by its classpath path, or by the file the agent was loaded from
+     * if the path cannot be converted, e.g. for the Eclipse bin folder. The agents of the bean factory are searched
+     * first, another context may have loaded the same file.
+     */
+    private static XmlBeanDefinitionScannerAgent getAgent(DefaultListableBeanFactory beanFactory, URL url) {
+        String path = convertToClasspathURL(url.getPath());
+        Map<String, XmlBeanDefinitionScannerAgent> instances = beanFactoryToAgentMap.get(beanFactory);
+        if (instances != null) {
+            XmlBeanDefinitionScannerAgent agent = findAgent(instances, path, url);
+            if (agent != null) {
+                return agent;
+            }
+        }
+        return findAgent(pathToAgent, path, url);
+    }
+
+    private static XmlBeanDefinitionScannerAgent findAgent(Map<String, XmlBeanDefinitionScannerAgent> instances, String path, URL url) {
+        XmlBeanDefinitionScannerAgent agent = instances.get(path);
+        return agent != null ? agent : findAgentByFile(instances.values(), url);
+    }
+
+    private static XmlBeanDefinitionScannerAgent findAgentByFile(Collection<XmlBeanDefinitionScannerAgent> agents, URL url) {
+        for (XmlBeanDefinitionScannerAgent agent : agents) {
+            if (isSameFile(agent.url, url)) {
+                return agent;
+            }
+        }
+        return null;
+    }
+
+    private static boolean isSameFile(URL url1, URL url2) {
+        if (url1 == null || url2 == null || !url1.getProtocol().equals(url2.getProtocol())) {
+            return false;
+        }
+        if ("file".equals(url1.getProtocol())) {
+            try {
+                // Path.equals ignores the case on Windows
+                return toPath(url1).equals(toPath(url2));
+            } catch (InvalidPathException e) {
+                return false;
+            }
+        }
+        return url1.toExternalForm().equals(url2.toExternalForm());
+    }
+
+    private static Path toPath(URL url) {
+        return new File(ResourceUtils.decode(url.getPath())).toPath().normalize();
     }
 
     private static XmlBeanDefinitionScannerAgent getAgent(DefaultListableBeanFactory beanFactory, String path) {
@@ -235,11 +291,8 @@ public class XmlBeanDefinitionScannerAgent {
                         resource.getDescription());
                 return null;
             }
-            String path = convertToClasspathURL(resource.getURL().getPath());
-            if (path == null) {
-                return null;
-            }
-            return pathToAgent.get(path);
+            URL url = resource.getURL();
+            return findAgent(pathToAgent, convertToClasspathURL(url.getPath()), url);
         } catch (IOException e) {
             LOGGER.warning("Fail to fetch url from resource: {}", resource);
             return null;
@@ -314,7 +367,7 @@ public class XmlBeanDefinitionScannerAgent {
         LOGGER.info("Reloading XML file '{}' of {} ", url, ObjectUtils.identityToString(this.reader.getRegistry()));
         // this will call registerBeanDefinition which in turn call resetBeanDefinition to destroy singleton
         // maybe should use watchResourceClassLoader.getResource?
-        this.reader.loadBeanDefinitions(new FileSystemResource(url.getPath()));
+        this.reader.loadBeanDefinitions(new FileSystemResource(ResourceUtils.decode(url.getPath())));
 
         reloadFlag = false;
     }
